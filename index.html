@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinnacle</title>
+    <!-- 
+            This page is developed for Pinnacle CA Meet May 2024.
+            Press P to start background music
+            Press M to mute/unmute music
+            Press Up & Down arrow keys to adjust volume
+            Press Enter to switch to Icebreaker view.
+            Icebreaker is designed to create random pairings of participants for mutual introduction.
+            Countdown timer is set for 10 minutes
+            For any queries, contact Sivaraj Ambat
+    -->
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <style>
+        #pairings-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .pair {
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .middle {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            row-gap: 20px;
+        }
+
+        button {
+            width: 200px;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            /* Prevents scrollbars due to the video size */
+        }
+
+        #video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            /* Ensures the video covers the entire viewport */
+            z-index: -1;
+            /* Places the video behind other content */
+        }
+
+
+        .logo {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            /* Places the image above the video */
+            opacity: 1;
+            /* Adjust the opacity as needed */
+            transition: top 1s ease-in-out, transform 1s ease-in-out, width 1s ease-in-out;
+        }
+
+        #content-container {
+            display: none;
+            opacity: 0;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #timer-container {
+            display: block;
+            opacity: 1;
+            text-align: center;
+            z-index: 3;
+
+        }
+
+        li {
+            background-color: rgba(0, 0, 0, 0.4);
+            margin-top: 3px;
+            margin-bottom: 3px;
+        }
+
+        #countdown-timer {
+            display: block;
+            font-size: 72px;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <video id="video-background" autoplay muted loop>
+        <source src="background.mp4" type="video/mp4">
+    </video>
+
+    <img id="logo" src="Logo_NoBG.png" alt="" class="logo">
+    <div id="content-container" class="container">
+        <div class="row">
+            <div class="col">
+                <textarea id="participants" rows="28" cols="45"
+                    style="background: rgba(0,0,0,0.4); display:none;"></textarea>
+            </div>
+            <div class="col middle">
+                <div>
+                    <button class="btn btn-primary" onclick="addNames()">Add Names</button>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="shuffleNames()">Shuffle Names</button>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="generatePairings()">Generate Pairings</button>
+                </div>
+                <div id="timer-container">
+
+                    <button class="btn btn-primary" onclick="startTimer()">Start Timer</button>
+                    <div id="countdown-timer"></div>
+                </div>
+
+            </div>
+            <div class="col">
+                <ol class="list-group" id="pairings-list"></ol>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="audio-container" style="display:none;">
+        <!-- <audio id="audio-background" controls autoplay loop>
+        </audio> -->
+
+        <audio id="audio1" src="Track-1.m4a"></audio>
+        <audio id="audio2" src="Track-2.m4a"></audio>
+        <audio id="audio3" src="Track-3.m4a"></audio>
+        <audio id="audio4" src="Track-4.m4a"></audio>
+        <audio id="audio5" src="Track-5.m4a"></audio>
+        <audio id="audio6" src="Track-6.m4a"></audio>
+        <audio id="audio7" src="Track-7.m4a"></audio>
+
+    </div>
+
+    <br>
+    <script>
+        let shuffledArray = [];
+        const logo = document.getElementById('logo');
+        const contentContainer = document.getElementById('content-container');
+        // const audio = document.getElementById('audio-background');
+        const timerContainer = document.getElementById('timer-container');
+        const participantsTextarea = document.getElementById('participants');
+        let countdownInterval;
+
+        const audioElements = document.querySelectorAll('audio');
+        let isPlaying = false;
+        let isMuted = false;
+        let currentAudio = null;
+        let lastPlayedIndex = -1;
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+            function playRandomAudio() {
+                if (currentAudio) {
+                    currentAudio.removeEventListener('ended', playRandomAudio);
+                }
+
+                let randomIndex;
+                do {
+                    randomIndex = Math.floor(Math.random() * audioElements.length);
+                } while (randomIndex === lastPlayedIndex);
+
+                lastPlayedIndex = randomIndex;
+                currentAudio = audioElements[randomIndex];
+                currentAudio.muted = isMuted;
+                currentAudio.play();
+                currentAudio.addEventListener('ended', playRandomAudio);
+            }
+
+
+            function togglePlayback() {
+                if (isPlaying) {
+                    currentAudio.pause();
+                } else {
+                    if (!currentAudio) {
+                        playRandomAudio();
+                    } else {
+                        currentAudio.play();
+                    }
+                }
+                isPlaying = !isPlaying;
+            }
+            document.addEventListener('keydown', (event) => {
+                if (event.key.toLowerCase() === 'p') {
+                    togglePlayback();
+                } else if (event.key === 'm' || event.key === 'M') {
+                    isMuted = !isMuted;
+                    currentAudio.muted = !currentAudio.muted;
+                } else if (event.key === 'ArrowUp') {
+                    // Increase volume with the up arrow key
+                    if (currentAudio.volume < 1) {
+                        currentAudio.volume += 0.1;
+                    }
+                } else if (event.key === 'ArrowDown') {
+                    // Decrease volume with the down arrow key
+                    if (currentAudio.volume > 0.1) {
+                        currentAudio.volume -= 0.1;
+                    }
+                }
+            });
+        });
+
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                // Apply animations when Enter key is pressed
+
+                logo.style.top = '10%';
+                logo.style.transform = 'translate(-50%, -50%) scale(0.7,0.7)';
+                // logo.style.width = '400px';
+                // Show and animate the content container
+                contentContainer.style.display = 'block';
+                setTimeout(() => {
+                    contentContainer.style.opacity = 1;
+                }, 500);
+            }
+        });
+
+        function addNames() {
+            participantsTextarea.style.display = 'block';
+            fetch('names.json')
+                .then(response => response.json())
+                .then(data => {
+                    const filteredNames = data
+                        .filter(person => person.include)
+                        .map(person => person.name)
+                        .sort((a, b) => a.localeCompare(b));
+                    participantsTextarea.value = filteredNames.join('\n');
+                })
+                .catch(error => console.error('Error loading names:', error));
+        }
+
+
+        function shuffleNames() {
+
+
+            let participants = participantsTextarea.value.trim().split('\n');
+            console.log(participants);
+
+            if (participants.length < 2) {
+                swal('OOPS!', 'Please enter at least two participants', 'error');
+                return;
+            }
+
+            if (participants.length % 2 != 0) {
+                swal(`${participants.length} names found!`, 'Please enter one more name to create the pairs', 'error');
+                return;
+            }
+
+            shuffledArray = participants.slice();
+
+            shuffledArray = participants.slice(); // Reset to the original array
+            for (let i = shuffledArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
+            }
+            console.log(shuffledArray);
+            updateTextarea(shuffledArray);
+        }
+
+        function generatePairings() {
+            const pairingsList = document.getElementById('pairings-list');
+            pairingsList.innerHTML = ''; // Clear previous pairings
+
+            const pairings = [];
+            for (let i = 0; i < shuffledArray.length; i += 2) {
+                const pair = [shuffledArray[i], shuffledArray[i + 1]];
+                pairings.push(pair);
+            }
+
+            // Display pairings with animation
+            pairings.forEach((pair, index) => {
+                setTimeout(() => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('pair');
+                    listItem.classList.add('list-group-item');
+                    listItem.textContent = `${pair[0]} - ${pair[1]}`;
+                    pairingsList.appendChild(listItem);
+
+                    // Trigger fade-in animation
+                    setTimeout(() => {
+                        listItem.style.opacity = 1;
+                    }, 100); // Adding a delay for a smoother effect
+                }, index * 1000); // Delay between pairings
+            });
+        }
+
+        function updateTextarea(shuffledArray) {
+            const arrayAsString = shuffledArray.join('\n');
+            document.getElementById('participants').value = arrayAsString;
+        }
+
+        function showTimer() {
+            timerContainer.style.display = 'block';
+            setTimeout(() => {
+                timerContainer.style.opacity = 1;
+            }, 500);
+
+            const countdownTimer = document.getElementById('countdown-timer');
+            countdownTimer.textContent = '00:00';
+        }
+
+        function startTimer() {
+            let secondsRemaining = 600; // Countdown timer is set for 10 minutes
+            countdownInterval = setInterval(() => {
+                const minutes = Math.floor(secondsRemaining / 60);
+                const seconds = secondsRemaining % 60;
+
+                // Display the formatted time
+                const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                const countdownTimer = document.getElementById('countdown-timer');
+                countdownTimer.textContent = formattedTime;
+
+                // Decrease the remaining time
+                secondsRemaining--;
+
+                if (secondsRemaining < 0) {
+                    clearInterval(countdownInterval);
+                    swal('Time\'s up!', 'It\'s time to start the introductions', 'success');
+                }
+            }, 1000);
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+</body>
+
+</html>

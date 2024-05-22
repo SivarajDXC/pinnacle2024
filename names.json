@@ -1,0 +1,6 @@
+[
+    { "name": "John Doe", "include": true },
+    { "name": "Oliver Twist", "include": false },
+    { "name": "Tom Sawyer", "include": true },
+    { "name": "Mary Jane", "include": true }
+]
