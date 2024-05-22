@@ -11,13 +11,16 @@
             Press M to mute/unmute music
             Press Up & Down arrow keys to adjust volume
             Press Enter to switch to Icebreaker view.
-            Icebreaker is designed to create random pairings of participants for mutual introduction.
-            Countdown timer is set for 10 minutes
+            Countdown timer is set for 5 minutes
             For any queries, contact Sivaraj Ambat
     -->
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <style>
+        body {
+            color: black;
+        }
+
         #pairings-list {
             list-style: none;
             padding: 0;
@@ -43,7 +46,6 @@
         body {
             margin: 0;
             overflow: hidden;
-            /* Prevents scrollbars due to the video size */
         }
 
         #video-background {
@@ -53,11 +55,8 @@
             width: 100vw;
             height: 100vh;
             object-fit: cover;
-            /* Ensures the video covers the entire viewport */
             z-index: -1;
-            /* Places the video behind other content */
         }
-
 
         .logo {
             position: fixed;
@@ -65,9 +64,7 @@
             top: 50%;
             transform: translate(-50%, -50%);
             z-index: 1;
-            /* Places the image above the video */
             opacity: 1;
-            /* Adjust the opacity as needed */
             transition: top 1s ease-in-out, transform 1s ease-in-out, width 1s ease-in-out;
         }
 
@@ -83,12 +80,46 @@
             transition: opacity 0.5s ease-in-out;
         }
 
+        .results{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .result-container{
+            width: 100%;
+        }
+
+        #randomName {
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            margin-top: 3px;
+            margin-bottom: 3px;
+            font-size: 1.2em;
+            width: 100%;
+            border-radius: 3px;
+        }
+
+        @keyframes slot-machine {
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(-100%);
+            }
+        }
+
+        .animate {
+            display: inline-block;
+            animation: slot-machine 0.2s steps(1) infinite;
+        }
+
         #timer-container {
             display: block;
             opacity: 1;
             text-align: center;
             z-index: 3;
-
         }
 
         li {
@@ -106,12 +137,9 @@
 </head>
 
 <body>
-
-
     <video id="video-background" autoplay muted loop>
         <source src="background.mp4" type="video/mp4">
     </video>
-
     <img id="logo" src="Logo_NoBG.png" alt="" class="logo">
     <div id="content-container" class="container">
         <div class="row">
@@ -124,6 +152,9 @@
                     <button class="btn btn-primary" onclick="addNames()">Add Names</button>
                 </div>
                 <div>
+                    <button class="btn btn-primary" onclick="pickRandomName()">Pick Random Name</button>
+                </div>
+                <div>
                     <button class="btn btn-primary" onclick="shuffleNames()">Shuffle Names</button>
                 </div>
                 <div>
@@ -134,19 +165,18 @@
                     <button class="btn btn-primary" onclick="startTimer()">Start Timer</button>
                     <div id="countdown-timer"></div>
                 </div>
-
             </div>
-            <div class="col">
-                <ol class="list-group" id="pairings-list"></ol>
+            <div class="col results">
+                <div class="result-container">
+                    <ol class="list-group" id="pairings-list"></ol>
+                    <div id="randomName"></div>
+                </div>
             </div>
         </div>
-
     </div>
-
     <div id="audio-container" style="display:none;">
         <!-- <audio id="audio-background" controls autoplay loop>
         </audio> -->
-
         <audio id="audio1" src="Track-1.m4a"></audio>
         <audio id="audio2" src="Track-2.m4a"></audio>
         <audio id="audio3" src="Track-3.m4a"></audio>
@@ -154,20 +184,19 @@
         <audio id="audio5" src="Track-5.m4a"></audio>
         <audio id="audio6" src="Track-6.m4a"></audio>
         <audio id="audio7" src="Track-7.m4a"></audio>
-
     </div>
-
-    <br>
     <script>
         let shuffledArray = [];
         const logo = document.getElementById('logo');
         const contentContainer = document.getElementById('content-container');
         // const audio = document.getElementById('audio-background');
         const timerContainer = document.getElementById('timer-container');
+        const countdownTimer = document.getElementById('countdown-timer');
         const participantsTextarea = document.getElementById('participants');
-        let countdownInterval;
-
+        const pairingsList = document.getElementById('pairings-list');
+        const randomNameDiv = document.getElementById('randomName');
         const audioElements = document.querySelectorAll('audio');
+        let countdownInterval;
         let isPlaying = false;
         let isMuted = false;
         let currentAudio = null;
@@ -228,12 +257,8 @@
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') {
-                // Apply animations when Enter key is pressed
-
                 logo.style.top = '10%';
                 logo.style.transform = 'translate(-50%, -50%) scale(0.7,0.7)';
-                // logo.style.width = '400px';
-                // Show and animate the content container
                 contentContainer.style.display = 'block';
                 setTimeout(() => {
                     contentContainer.style.opacity = 1;
@@ -255,25 +280,46 @@
                 .catch(error => console.error('Error loading names:', error));
         }
 
+        function pickRandomName() {
+            pairingsList.innerHTML = ''; 
+            const names = participantsTextarea.value.split('\n').filter(name => name.trim() !== '');
+            if (names.length === 0) {
+                swal('OOPS!', 'No names available to pick from', 'error');
+                return;
+            }
+            randomNameDiv.innerHTML = '';
+            const animationDiv = document.createElement('div');
+            animationDiv.classList.add('animate');
+            randomNameDiv.appendChild(animationDiv);
+
+            let scrollNames = [...names, ...names, ...names];
+            console.log(scrollNames);
+            let index = 0;
+            const interval = setInterval(() => {
+                animationDiv.textContent = scrollNames[index % scrollNames.length];
+                index++;
+            }, 100);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                const selectedName = names[Math.floor(Math.random() * names.length)];
+                randomNameDiv.innerHTML = `<div>${selectedName}</div>`;
+            }, 3000);
+        }
+
 
         function shuffleNames() {
-
-
             let participants = participantsTextarea.value.trim().split('\n');
             console.log(participants);
-
             if (participants.length < 2) {
                 swal('OOPS!', 'Please enter at least two participants', 'error');
                 return;
             }
-
             if (participants.length % 2 != 0) {
                 swal(`${participants.length} names found!`, 'Please enter one more name to create the pairs', 'error');
                 return;
             }
-
             shuffledArray = participants.slice();
-
             shuffledArray = participants.slice(); // Reset to the original array
             for (let i = shuffledArray.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -284,16 +330,13 @@
         }
 
         function generatePairings() {
-            const pairingsList = document.getElementById('pairings-list');
-            pairingsList.innerHTML = ''; // Clear previous pairings
-
+            pairingsList.innerHTML = ''; 
+            randomNameDiv.innerHTML = '';
             const pairings = [];
             for (let i = 0; i < shuffledArray.length; i += 2) {
                 const pair = [shuffledArray[i], shuffledArray[i + 1]];
                 pairings.push(pair);
             }
-
-            // Display pairings with animation
             pairings.forEach((pair, index) => {
                 setTimeout(() => {
                     const listItem = document.createElement('li');
@@ -302,7 +345,6 @@
                     listItem.textContent = `${pair[0]} - ${pair[1]}`;
                     pairingsList.appendChild(listItem);
 
-                    // Trigger fade-in animation
                     setTimeout(() => {
                         listItem.style.opacity = 1;
                     }, 100); // Adding a delay for a smoother effect
@@ -326,22 +368,20 @@
         }
 
         function startTimer() {
-            let secondsRemaining = 600; // Countdown timer is set for 10 minutes
+            clearInterval(countdownInterval);
+            let secondsRemaining = 30; // Countdown timer is set for 5 minutes
             countdownInterval = setInterval(() => {
                 const minutes = Math.floor(secondsRemaining / 60);
                 const seconds = secondsRemaining % 60;
-
-                // Display the formatted time
                 const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                const countdownTimer = document.getElementById('countdown-timer');
+                countdownTimer.innerHTML = '';
                 countdownTimer.textContent = formattedTime;
 
-                // Decrease the remaining time
                 secondsRemaining--;
 
                 if (secondsRemaining < 0) {
                     clearInterval(countdownInterval);
-                    swal('Time\'s up!', 'It\'s time to start the introductions', 'success');
+                    swal('Time\'s up!', 'The allotted time has elapsed!', 'success');
                 }
             }, 1000);
         }
