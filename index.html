@@ -140,7 +140,7 @@
     <video id="video-background" autoplay muted loop>
         <source src="background.mp4" type="video/mp4">
     </video>
-    <img id="logo" src="Logo_NoBG.png" alt="" class="logo">
+    <img id="logo" src="logo.png" alt="" class="logo">
     <div id="content-container" class="container">
         <div class="row">
             <div class="col">
@@ -276,7 +276,7 @@
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Enter') {
-                logo.style.top = '10%';
+                logo.style.top = '15%';
                 logo.style.transform = 'translate(-50%, -50%) scale(0.7,0.7)';
                 contentContainer.style.display = 'block';
                 setTimeout(() => {
